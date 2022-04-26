@@ -54,7 +54,8 @@ def get_prediction(modelpath, image_input):
     
     PM = np.ones([10,3,6]) #*-1 #Position matrix
     idx = [0,0,0] #np.zeros([1,3]) #with zeros considering 0 position at the beginning
-    
+    pred = []
+
     for output in layerOutputs:
         for detection in output:
             scores = detection[5:]
@@ -68,80 +69,25 @@ def get_prediction(modelpath, image_input):
                 x = int(center_x - w/2)
                 y = int(center_y - h/2)
 
+                pred.append([classify_pred([x, y, w, h],confidence),x,y,w,h,confidence])
 
 
-                if center_x > g1min and center_x <= g1max and center_y >= hmin and center_y <= hmax:
-                    #1st group
-                    PM[idx[0],0,:] = [classify_pred([x, y, w, h],confidence),x,y,w,h,confidence]
-                    idx[0] += 1
-                if center_x > g2min and center_x <= g2max and center_y >= hmin and center_y <= hmax:
-                    #2nd group
-                    PM[idx[1],1,:] = [classify_pred([x, y, w, h],confidence),x,y,w,h,confidence]
-                    idx[1] += 1
-                if center_x > g3min and center_x <= g3max and center_y >= hmin and center_y <= hmax:
-                    #3th group
-                    PM[idx[2],2,:] = [classify_pred([x, y, w, h],confidence),x,y,w,h,confidence]
-                    idx[2] += 1
-        print("por aquiiiii")
-        
-        #here it is necessary to treat boxes, confidences and class_ids as stablished array size variables
-        #in order to know if there is a cell with no seedling detection
-        
-        for pidx in range(3):
-            val = -1
-            print(idx[pidx])
-            if idx[pidx] > 0: #if there is -1 value at position it must be recognized as no seedling detection situation
-                for i in range(idx[pidx]):
-                    print("i: ", i)
-                    c = PM[i,pidx,0] #this stage goes for discrimination in case more than one seedling was detected and classified at the same cell
-                    if c > val: #the greatest class is our guy!
-                        indx = i
-                        val = c
-                
-                #################those variables could be initialized as -1 arrays################3                
-                print("PM: ",PM[indx,pidx,1:5])
-                boxes[pidx] = PM[indx,pidx,1:5]
-                confidences[pidx] = float(PM[indx,pidx,5])
-                class_ids[pidx] = PM[indx,pidx,0]
-                #boxes.append(PM[indx,pidx,1:5])
-                #confidences.append(float(PM[indx,pidx,5]))
-                #class_ids.append(PM[indx,pidx,0])
-                
-            #else:
-            #    boxes.append((0,0,0,0))
-            #    confidences.append(0)
-            #    class_ids.append(0)
-                
-            print("por aquiiiii 2")
-        
-        #boxes.append([x, y, w, h]) 
-        #confidences.append((float(confidence)))
-        #class_ids.append(class_id)
-
-
-
-    print("saliooo")    
-    print("shape boxes: ", len(boxes))
-    print(boxes[0])
-    print(boxes[1])
-    print(boxes[2])
     
-    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.2, 0.4)
-    print("indexes: ", indexes)
-    seedlfnames = [" "," "," "]
+    #indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.2, 0.4)
+    #print("indexes: ", indexes)
+    #seedlfnames = [" "," "," "]
     
     #This is just for saving seedling images each one in different file
-    if len(indexes) > 0:
-        for i in indexes.flatten():
-            x, y, w, h = boxes[i]
-            print("paso aquiiii")
-            #label = str(classes[class_ids[i]])
-            confidence = str(round(confidences[i],2))
-            #color = colors[i]
-            #cv2.rectangle(img, (x,y), (x+w, y+h), color, 2)
-            #cv2.putText(img, label + " " + confidence, (x, y+20), font, 1, (255,255,255), 2)
+    if len(pred) > 0:
+        for i, p in enumarate(pred):
+            x, y, w, h = p[i][1:4]
+            label = p[0]
+            confidence = str(round(p[-1],2))
+            color = colors[i]
+            cv2.rectangle(img, (x,y), (x+w, y+h), color, 2)
+            cv2.putText(img, label + " " + confidence, (x, y+20), font, 1, (255,255,255), 2)
             
-            crop_img = img[int(y):int(y+h+40), int(x):int(x+w+40)]
+            crop_img = img[int(y):int(y+h), int(x):int(x+w)]
             now = datetime.now()
             dt_str = now.strftime("%d-%m-%Y_%H-%M-%S.%f")
             sfn = 'seedling_' + dt_str + '.png'
@@ -165,23 +111,25 @@ def classify_pred(box, score): #classifications images according to calibrated t
         #then it is necessary to know if it is bad or good seedling
         if area < left_threshold:
             #bad seedling
-            return 1#0
+            return "bad" #1#0
         if area > right_threshold:
             #good seeling
-            return 3#2
+            return "good" #3#2
         else:
-            return 2#1  #TO BE CONSIDERED!
+            return "avrg" #2#1  #TO BE CONSIDERED!
     else:
         #at least that it has a big area
         if area <= right_threshold: #area > left_threshold and area < right_threshold: #OJOOOO!! take it into account
             #average seedling
-            return 2#1
+            return "avrg" #2#1
         if area > right_threshold:
             #good seedling
-            return 3#2
+            return "good" #3#2
         #else:
         #    return 1#0
+
     print("no pasa")
+    return "unknown"
 
 def start_processing_image(img):
     print("Processing image")
