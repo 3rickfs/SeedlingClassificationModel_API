@@ -68,6 +68,8 @@ def get_prediction(modelpath, image_input):
                 x = int(center_x - w/2)
                 y = int(center_y - h/2)
 
+
+
                 if center_x > g1min and center_x <= g1max and center_y >= hmin and center_y <= hmax:
                     #1st group
                     PM[idx[0],0,:] = [classify_pred([x, y, w, h],confidence),x,y,w,h,confidence]
@@ -115,6 +117,8 @@ def get_prediction(modelpath, image_input):
         #boxes.append([x, y, w, h]) 
         #confidences.append((float(confidence)))
         #class_ids.append(class_id)
+
+
 
     print("saliooo")    
     print("shape boxes: ", len(boxes))
