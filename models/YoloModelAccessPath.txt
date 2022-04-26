@@ -1,0 +1,4 @@
+/home/IA_Models
+
+GitHub avoids files bigger than 100MB, then the model can be download from:
+...
