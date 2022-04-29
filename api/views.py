@@ -1,8 +1,14 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.http import JsonResponse
 from django.shortcuts import render
-from . IA_ModelsToolBox import 
+from . IA_ModelsToolBox import get_seedling_class
+from django.conf import settings
+import pandas as pd
+import os
+import requests
+from PIL import Image
 
 # Create your views here.
 #@api_view(['GET'])
@@ -13,22 +19,47 @@ from . IA_ModelsToolBox import
 #	}
 #	return Response(return_data)
 
-
-
-
-
-
 @api_view(['POST'])
 def predict_seedlingClass(request):
 	try:
 		#prediction process
-		#...
-	except Exception as e:
-	predictions = {
-		'error': '2',
-		"message": str(e),
-	}		
+		print("Loading image file")
+		url = request.POST.get('url') #form-data (key-value) format to store the request
+		print(f"The url is: {url}")
+		head, tail = os.path.split(url)
+		r = requests.get(url, allow_redirects=True)
+		img_path = settings.MEDIA_ROOT
+		open(os.path.join(img_path, tail), 'wb').write(r.content)
+		print("Image loaded")
 
-	return Response(predictions)
+		files = []
+		for i in os.listdir(img_path):
+			print("Reading an image file")
+			img = Image.open(os.path.join(img_path,i))
+			fmt = str(img.format)
+			#if i.endswith('.jpg') or i.endswith('.png'):
+			if fmt == "JPEG" or fmt == "JPG" or fmt == "PNG":
+				files.append(i)
+			else:
+				print(f"{i} has not a valid format")
+
+		preds = []
+		for j in files:
+			print("Performing model processing")
+			preds.append(get_seedling_class(settings.MODELS, os.path.join(img_path, j)))
+
+		print("Model has got the predictions")
+		preds_df = pd.DataFrame(data=preds, columns=['class','x','y','w','h','confidence'])
+		preds_jso = preds_df.to_json(orient='values')
+		
+		return JsonResponse(preds_jso, safe=False)
+
+	except Exception as e:
+		predictions = {
+			'error': '2',
+			"message": str(e),
+		}		
+
+	return JsonResponse(predictions, safe=False)
 
 
