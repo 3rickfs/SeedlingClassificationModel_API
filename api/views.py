@@ -28,14 +28,15 @@ def predict_seedlingClass(request):
 		print(f"The url is: {url}")
 		head, tail = os.path.split(url)
 		r = requests.get(url, allow_redirects=True)
-		img_path = settings.MEDIA_ROOT
-		open(os.path.join(img_path, tail), 'wb').write(r.content)
+		imgfolder_path = settings.MEDIA_ROOT
+		open(os.path.join(imgfolder_path, tail), 'wb').write(r.content)
 		print("Image loaded")
 
 		files = []
-		for i in os.listdir(img_path):
+
+		for i in os.listdir(imgfolder_path):
 			print("Reading an image file")
-			img = Image.open(os.path.join(img_path,i))
+			img = Image.open(os.path.join(imgfolder_path,i))
 			fmt = str(img.format)
 			#if i.endswith('.jpg') or i.endswith('.png'):
 			if fmt == "JPEG" or fmt == "JPG" or fmt == "PNG":
@@ -46,11 +47,16 @@ def predict_seedlingClass(request):
 		preds = []
 		for j in files:
 			print("Performing model processing")
-			preds.append(get_seedling_class(settings.MODELS, os.path.join(img_path, j)))
+			imgpath = os.path.join(imgfolder_path, j)
+			preds.append(get_seedling_class(settings.MODELS, imgpath))
 
 		print("Model has got the predictions")
-		preds_df = pd.DataFrame(data=preds, columns=['class','x','y','w','h','confidence'])
+		print(f"Number of predictions done {len(preds[0])}") #First considering one image, if there is more will display the last one image preds
+		preds_df = pd.DataFrame(data=preds[0], columns=['class','x','y','w','h','confidence'])
+		print(preds_df)
 		preds_jso = preds_df.to_json(orient='values')
+		#Removing the downloaded file to avoid innecesary processing in the next pred
+		os.remove(imgpath)
 		
 		return JsonResponse(preds_jso, safe=False)
 

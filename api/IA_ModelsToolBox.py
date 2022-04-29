@@ -10,11 +10,11 @@ iimg_height, iimg_width = 416, 416
 IA_Model_path = '/home/emfs/IA_Models' #Change this!
 
 def get_seedling_class(modelpath, image_input):
-    print("begin PREDICTION PROCESS")
+    print("Begin PREDICTION PROCESS")
     weight_path = os.path.join(IA_Model_path, 'yolov3_training_last.weights')
     cfg_path = os.path.join(modelpath, 'yolov3_testing.cfg')
     net = cv2.dnn.readNet(weight_path, cfg_path)
-    print("yolov3 loaded")
+    print("Yolov3 loaded")
 
     classes = []
     with open(os.path.join(modelpath,"classes.txt"), "r") as f:
@@ -23,17 +23,18 @@ def get_seedling_class(modelpath, image_input):
     font = cv2.FONT_HERSHEY_PLAIN
     colors = np.random.uniform(0, 255, size=(100, 3))
     
-    print(f"The image path is: {image_input}")
+    #print(f"The image path is: {image_input}")
     img = cv2.imread(image_input)
-    print(f"The img is: {img}")
+    #print(f"The img is: {img}")
         
     height, width, c = img.shape
+    print("Current image size:")
     print("height: " + str(height) + ", width: " + str(width))
     if width > iimg_width or width < iimg_width or height > iimg_height:
         dim = (iimg_height, iimg_width)
         img = cv2.resize(img, dim)
         height, width, _ = img.shape
-    
+    print("New image size:")
     print("height: " + str(height) + ", width: " + str(width))
   
     print("Start processing image with Yolov3 model")
